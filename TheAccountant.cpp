@@ -31,7 +31,7 @@ public:
 	int y;
 	int life;
 
-	int targetDataId;
+	DataPoint targetDP;
 	float distToPlayer;
 	float distToDataPoint;
 	float distToPlayerAfterMove;
@@ -70,8 +70,18 @@ void PrepareEnemies() {
 			int distToDP = CalculateDistance(it->x, it->y, itDP->x, itDP->y);
 			if (distToDP < it->distToDataPoint) {
 				it->distToDataPoint = distToDP;
+				it->targetDP = *itDP;
+			}
+			else if (distToDP == it->distToDataPoint) {
+				if (itDP->id < it->targetDP.id) {
+					it->targetDP = *itDP;
+				}
 			}
 		}
+
+		//TO-DO: Calculate nextX, nextY
+
+		//TO-DO:Calculate distToPlayerAfterMove
 	}
 
 }
