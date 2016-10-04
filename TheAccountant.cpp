@@ -7,10 +7,149 @@
 
 using namespace std;
 
+#define ARENA_WIDTH 16000
+#define ARENA_HEIGHT 9000
+
 float MAX_DISTANCE = sqrt(16000 * 16000 + 9000 * 9000);
 
 int ENEMY_STEP = 500;
 int DEATH_RANGE = 2000;
+int MULTIPLYING_FACTOR = 1002000;
+
+int getMax(int a, int b) {
+	return (a > b) ? a : b;
+}
+
+int getMin(int a, int b) {
+	return (a < b) ? a : b;
+}
+
+//Vector2
+class Vector2
+{
+public:
+	//Constructors
+	Vector2() {
+		x = 0.0f;
+		y = 0.0f;
+	}
+	Vector2(float _x, float _y){
+		x = _x;
+		y = _y;
+	}
+	Vector2(float * pArg){
+		x = pArg[0];
+		y = pArg[1];
+	}
+	Vector2(Vector2 & vector) {
+		x = vector.x;
+		y = vector.y;
+	}
+
+	//Vector's operations
+	float Length()
+	{
+		return sqrt(x*x + y*y);
+	}
+
+	Vector2 & Normalize()
+	{
+		float lenInv = 1.0f / Length();
+		x *= lenInv;
+		y *= lenInv;
+
+		return *this;
+	}
+
+	Vector2 operator + (Vector2 & vector)
+	{
+		Vector2 temp(x + vector.x, y + vector.y);
+		return temp;
+	}
+
+	Vector2 & operator += (Vector2 & vector)
+	{
+		x += vector.x;
+		y += vector.y;
+
+		return *this;
+	}
+
+	Vector2 operator - ()
+	{
+		Vector2 temp(-x, -y);
+		return temp;
+	}
+
+	Vector2 operator - (Vector2 & vector)
+	{
+		Vector2 temp(x - vector.x, y - vector.y);
+		return temp;
+	}
+
+	Vector2 & operator -= (Vector2 & vector)
+	{
+		x -= vector.x;
+		y -= vector.y;
+
+		return *this;
+	}
+
+	Vector2 operator * (float k)
+	{
+		Vector2 temp(x * k, y * k);
+		return temp;
+	}
+
+	Vector2 & operator *= (float k)
+	{
+		x *= k;
+		y *= k;
+
+		return *this;
+	}
+
+	Vector2 operator / (float k)
+	{
+		float kInv = 1.0f / k;
+		Vector2 temp(x * kInv, y * kInv);
+		return temp;
+	}
+
+	Vector2 & operator /= (float k)
+	{
+		return operator *= (1.0f / k);
+	}
+
+	Vector2 & operator = (Vector2 & vector)
+	{
+		x = vector.x;
+		y = vector.y;
+
+		return *this;
+	}
+
+	float operator [] (unsigned int idx)
+	{
+		return (&x)[idx];
+	}
+
+	Vector2 Modulate(Vector2 & vector)
+	{
+		Vector2 temp(x * vector.x, y * vector.y);
+		return temp;
+	}
+
+	float Dot(Vector2 & vector)
+	{
+		return x * vector.x + y * vector.y;
+	}
+
+	//data members
+	float x;
+	float y;
+};
+
 
 float CalculateDistance(int xFirst, int yFirst, int xSecond, int ySecond) {
 	int xSquare = (xSecond - xFirst) * (xSecond - xFirst);
@@ -39,6 +178,25 @@ public:
 	float distToDataPoint;
 	float distToPlayerAfterMove;
 	int nextX, nextY;
+	Vector2 directionToPlayer;
+
+	Enemy() {}
+
+	Enemy(const Enemy& e) {
+		id = e.id;
+		x = e.x;
+		y = e.y;
+		life = e.life;
+
+		targetDP = e.targetDP;
+		distToPlayer = e.distToPlayer;
+		distToDataPoint = e.distToDataPoint;
+		distToPlayerAfterMove = e.distToPlayerAfterMove;
+		nextX = e.nextX;
+		nextY = e.nextY;
+		directionToPlayer.x = e.directionToPlayer.x;
+		directionToPlayer.y = e.directionToPlayer.y;
+	}
 
 	void CalculateNextXY(){
 		//!! Call this function only when the targetDP and distToDataPoint are already calculated!!
@@ -60,6 +218,7 @@ public:
 		if (remainingLife <= 0) {
 			canBeKilled = true;
 		}
+		return canBeKilled;
 	}
 
 };
@@ -71,7 +230,24 @@ class Player {
 public:
 	int x;
 	int y;
+	int nextX, nextY;
 	string action;
+	Vector2 directionNextMove;
+
+	void CalculateNextMove() {
+		nextX = x;
+		nextY = y;
+
+		directionNextMove *= MULTIPLYING_FACTOR;
+		nextX += directionNextMove.x;
+		nextY += directionNextMove.y;
+
+		nextX = (nextX > ARENA_WIDTH) ? ARENA_WIDTH : nextX;
+		nextX = (nextX < 0) ? 0 : nextX;
+
+		nextY = (nextY > ARENA_HEIGHT) ? ARENA_HEIGHT : nextY;
+		nextY = (nextY < 0) ? 0 : nextY;
+	}
 
 	list<Enemy> IsGoingToDie() {
 		list<Enemy> killers;
@@ -80,27 +256,54 @@ public:
 				killers.push_back(*it);
 			}
 		}
+		return killers;
+	}
+
+	int findClosestEnemyDP() {
+		Enemy closestOne = enemies.front();
+		for (list<Enemy>::iterator it = enemies.begin(); it != enemies.end(); ++it){
+			if (it->distToDataPoint < closestOne.distToDataPoint) {
+				closestOne = *it;
+			}
+		}
+		return closestOne.id;
 	}
 
 	void DecideAction() {
 		action = "";
 		//1- Check if we are going to be killed by an enemy in the next round
 		//   YES: Check if we can kill it from our current position
+		//			YES: then, kill it!
+		//			NO : run, Forest, run! But calculate where we should run to first based on all enemies' moving directions and distance from player
 		list<Enemy> killers = IsGoingToDie();
-		if (!killers.empty() && killers.size() == 1) {
+		if (!killers.empty()) {
 			//Check if we can kill it from our current position
-			Enemy killer = killers.front();
-			if (killer.CanBeKilled()) {
-				//kill it!
-				action = "SHOOT " + killer.id;
+			if (killers.size() == 1) {
+				Enemy killer = killers.front();
+				if (killer.CanBeKilled()) {
+					//kill it!
+					action = "SHOOT " + killer.id;
+					cerr << "killer.id = " << killer.id << endl;
+					cerr << action << endl;
+				}
+				else{
+					//move your ass!
+					CalculateNextMove();
+					action = "MOVE " + nextX + ' ' + nextY;
+				}
 			}
 			else {
 				//move your ass!
+				CalculateNextMove();
+				action = "MOVE " + nextX + ' ' + nextY;
 			}
 		}
-		//			YES: then, kill it!
-		//			NO : run, Forest, run! But calculate where we should run to first based on all enemies' moving directions and distance from player
 		//   NO : proceed with the algorithm 
+		else {
+			//Enemy enemyToShoot = findClosestEnemyDP();
+			int enemyID = findClosestEnemyDP();
+			action = "SHOOT " + to_string(enemyID);
+		}
 
 		//2- Check what enemy is the closest to a data point
 
@@ -119,11 +322,14 @@ void PrepareDataPoints() {
 }
 
 void PrepareEnemies() {
+	//reset the direction Vector
+	myPlayer.directionNextMove;
+
 	for (list<Enemy>::iterator it = enemies.begin(); it != enemies.end(); ++it){
 		it->distToPlayer = CalculateDistance(it->x, it->y, myPlayer.x, myPlayer.y);
 
 		it->distToDataPoint = MAX_DISTANCE;
-		for(list<DataPoint>::iterator itDP = dataPoints.begin(); itDP != dataPoints.end(); ++itDP){
+		for (list<DataPoint>::iterator itDP = dataPoints.begin(); itDP != dataPoints.end(); ++itDP){
 			int distToDP = CalculateDistance(it->x, it->y, itDP->x, itDP->y);
 			if (distToDP < it->distToDataPoint) {
 				it->distToDataPoint = distToDP;
@@ -141,6 +347,17 @@ void PrepareEnemies() {
 
 		//Calculate distToPlayerAfterMove
 		it->distToPlayerAfterMove = CalculateDistance(myPlayer.x, myPlayer.y, it->nextX, it->nextY);
+
+		//Calculate Vector Direction to Player
+		Vector2 temp1(myPlayer.x, myPlayer.y);
+		Vector2 temp2(it->x, it->y);
+		it->directionToPlayer.x = temp1.x - temp2.x;
+		it->directionToPlayer.y = temp1.y - temp2.y;
+		it->directionToPlayer.Normalize();
+		it->directionToPlayer /= it->distToPlayer;
+
+		//Accumulate all enemies directions
+		myPlayer.directionNextMove += it->directionToPlayer;
 	}
 
 }
@@ -187,7 +404,7 @@ int main()
 
 		//start decision-making algorithm for myPlayer
 		myPlayer.DecideAction();
-		
+
 		cout << myPlayer.action << endl; // MOVE x y or SHOOT id
 	}
 }
