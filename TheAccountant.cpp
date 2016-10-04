@@ -45,6 +45,9 @@ public:
 
 };
 
+list<DataPoint> dataPoints;
+list<Enemy> enemies;
+
 class Player {
 public:
 	int x;
@@ -53,11 +56,23 @@ public:
 	void CheckPossibleDeath(list<Enemy> enemies, list<DataPoint> dataPoints) {
 
 	}
+
+	string DecideAction() {
+		//1- Check if we are going to be killed by an enemy in the next round
+		//   YES: Check if we can kill it from our current position
+		//			YES: then, kill it!
+		//			NO : run, Forest, run! But calculate where we should run to first based on all enemies' moving directions and distance from player
+		//   NO : proceed with the algorithm 
+
+		//2- Check what enemy is the closest to a data point
+
+		//3- Check if we can kill it from our current position
+		//	 YES: then, kill it!
+		//	 NO : Calculate where we should move to be able to kill it or how many shots are needed to kill it before it gets the data point
+	}
 };
 
 Player myPlayer;
-list<DataPoint> dataPoints;
-list<Enemy> enemies;
 
 void PrepareDataPoints() {
 	for (list<DataPoint>::iterator it = dataPoints.begin(); it != dataPoints.end(); ++it){
@@ -131,7 +146,10 @@ int main()
 		//Gather important info about data points and enemies
 		PrepareDataPoints();
 		PrepareEnemies();
+
+		//TO-DO: start decision-making algorithm for myPlayer
+		string action = myPlayer.DecideAction();
 		
-		cout << "MOVE 8000 4500" << endl; // MOVE x y or SHOOT id
+		cout << action << endl; // MOVE x y or SHOOT id
 	}
 }
