@@ -37,7 +37,11 @@ public:
 	float distToPlayerAfterMove;
 	int nextX, nextY;
 
-	int SetTargetDataId(){}
+	void CalculateNextXY(){
+		//!! Call this function only when the targetDP and distToDataPoint are already calculated!!
+		nextX = floor((500.0f * (targetDP.x - x) / distToDataPoint) - x);
+		nextY = floor((500.0f * (targetDP.y - y) / distToDataPoint) - y);
+	}
 
 };
 
@@ -79,9 +83,11 @@ void PrepareEnemies() {
 			}
 		}
 
-		//TO-DO: Calculate nextX, nextY
+		//Calculate nextX, nextY
+		it->CalculateNextXY();
 
-		//TO-DO:Calculate distToPlayerAfterMove
+		//Calculate distToPlayerAfterMove
+		it->distToPlayerAfterMove = CalculateDistance(myPlayer.x, myPlayer.y, it->nextX, it->nextY);
 	}
 
 }
@@ -122,7 +128,9 @@ int main()
 			enemies.push_back(e);
 		}
 
-		myPlayer.CheckPossibleDeath(enemies, dataPoints);
+		//Gather important info about data points and enemies
+		PrepareDataPoints();
+		PrepareEnemies();
 		
 		cout << "MOVE 8000 4500" << endl; // MOVE x y or SHOOT id
 	}
