@@ -9,6 +9,9 @@ using namespace std;
 
 float MAX_DISTANCE = sqrt(16000 * 16000 + 9000 * 9000);
 
+int ENEMY_STEP = 500;
+int DEATH_RANGE = 2000;
+
 float CalculateDistance(int xFirst, int yFirst, int xSecond, int ySecond) {
 	int xSquare = (xSecond - xFirst) * (xSecond - xFirst);
 	int ySquare = (ySecond - yFirst) * (ySecond - yFirst);
@@ -39,8 +42,24 @@ public:
 
 	void CalculateNextXY(){
 		//!! Call this function only when the targetDP and distToDataPoint are already calculated!!
-		nextX = floor((500.0f * (targetDP.x - x) / distToDataPoint) - x);
-		nextY = floor((500.0f * (targetDP.y - y) / distToDataPoint) - y);
+		if (distToDataPoint <= ENEMY_STEP) {
+			nextX = targetDP.x;
+			nextY = targetDP.y;
+		}
+		else {
+			nextX = floor((ENEMY_STEP * (targetDP.x - x) / distToDataPoint) - x);
+			nextY = floor((ENEMY_STEP * (targetDP.y - y) / distToDataPoint) - y);
+		}
+	}
+
+	bool CanBeKilled() {
+		bool canBeKilled = false;
+		int damage = round(125000.0f / (pow(distToPlayer, 1.2f)));
+		int remainingLife = life - damage;
+
+		if (remainingLife <= 0) {
+			canBeKilled = true;
+		}
 	}
 
 };
@@ -52,14 +71,33 @@ class Player {
 public:
 	int x;
 	int y;
+	string action;
 
-	void CheckPossibleDeath(list<Enemy> enemies, list<DataPoint> dataPoints) {
-
+	list<Enemy> IsGoingToDie() {
+		list<Enemy> killers;
+		for (list<Enemy>::iterator it = enemies.begin(); it != enemies.end(); ++it){
+			if (it->distToPlayerAfterMove <= DEATH_RANGE) {
+				killers.push_back(*it);
+			}
+		}
 	}
 
-	string DecideAction() {
+	void DecideAction() {
+		action = "";
 		//1- Check if we are going to be killed by an enemy in the next round
 		//   YES: Check if we can kill it from our current position
+		list<Enemy> killers = IsGoingToDie();
+		if (!killers.empty() && killers.size() == 1) {
+			//Check if we can kill it from our current position
+			Enemy killer = killers.front();
+			if (killer.CanBeKilled()) {
+				//kill it!
+				action = "SHOOT " + killer.id;
+			}
+			else {
+				//move your ass!
+			}
+		}
 		//			YES: then, kill it!
 		//			NO : run, Forest, run! But calculate where we should run to first based on all enemies' moving directions and distance from player
 		//   NO : proceed with the algorithm 
@@ -147,9 +185,9 @@ int main()
 		PrepareDataPoints();
 		PrepareEnemies();
 
-		//TO-DO: start decision-making algorithm for myPlayer
-		string action = myPlayer.DecideAction();
+		//start decision-making algorithm for myPlayer
+		myPlayer.DecideAction();
 		
-		cout << action << endl; // MOVE x y or SHOOT id
+		cout << myPlayer.action << endl; // MOVE x y or SHOOT id
 	}
 }
