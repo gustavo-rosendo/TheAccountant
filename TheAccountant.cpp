@@ -462,6 +462,7 @@ public:
 				if (killer.CanBeKilled()) {
 					//kill it!
 					action = "SHOOT " + to_string(killer.id);
+
 					cerr << "killer.id = " << killer.id << endl;
 					cerr << action << endl;
 				}
