@@ -14,7 +14,7 @@ float MAX_DISTANCE = sqrt(16000 * 16000 + 9000 * 9000);
 
 int ENEMY_STEP = 500;
 int DEATH_RANGE = 2500;
-int MULTIPLYING_FACTOR = 1002000;
+int MULTIPLYING_FACTOR = 2002000;
 
 int getMax(int a, int b) {
 	return (a > b) ? a : b;
@@ -242,14 +242,19 @@ public:
 			Vector2 dummyDirToPlayer;
 			dummyDirToPlayer.x = x - it->x;
 			dummyDirToPlayer.y = y - it->y;
+			dummyDirToPlayer.Normalize();
 			Vector2 dummyDirToTargetDP;
 			dummyDirToTargetDP.x = it->targetDP.x - it->x;
 			dummyDirToTargetDP.y = it->targetDP.y - it->y;
+			dummyDirToTargetDP.Normalize();
 
 			float dotProd = dummyDirToPlayer.Dot(dummyDirToTargetDP);
 			cerr << "DOT : " << dotProd << " distToDataPoint : " << it->distToDataPoint << endl;
-			if(dotProd > (it->distToDataPoint/2) && dotProd <= (it->distToDataPoint)){
-				result.push_back(*it);
+			if(dotProd > 0.5f && dotProd <= 1.0f){
+				if(it->distToPlayer < DEATH_RANGE + ENEMY_STEP){
+					cerr << "enemy x : " << it->x << ", y : " << it->y << ", targetDP x : " << it->targetDP.x << ", y : " << it->targetDP.y << endl;
+					result.push_back(*it);
+				}
 			}
 		}
 		return result;
