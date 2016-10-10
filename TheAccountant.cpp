@@ -234,6 +234,7 @@ public:
 	int nextX, nextY;
 	string action;
 	Vector2 directionNextMove;
+	bool isEvadedClockWise;
 
 	list<Enemy> findEnemyWhichComeCloser(){
 		list<Enemy> result;
@@ -271,6 +272,11 @@ public:
 		int xLessThanPlayer = 0;
 		int yGreaterThanPlayer = 0;
 		int yLessThanPlayer = 0;
+		
+		int xDPGreaterThanPlayer = 0;
+		int xDPLessThanPlayer = 0;
+		int yDPGreaterThanPlayer = 0;
+		int yDPLessThanPlayer = 0;
 
 		for (list<Enemy>::iterator it = incomingEnemy.begin(); it != incomingEnemy.end(); ++it){
 			if(it->x > x)
@@ -282,37 +288,91 @@ public:
 				yGreaterThanPlayer++;
 			else
 				yLessThanPlayer++;
+			
+			//Data Point info
+			if(it->targetDP.x > x)
+				xDPGreaterThanPlayer++;
+			else
+				xDPLessThanPlayer++;
+
+			if(it->targetDP.y > y)
+				yDPGreaterThanPlayer++;
+			else
+				yDPLessThanPlayer++;
 		}
 
 		cerr << xGreaterThanPlayer << " " << xLessThanPlayer << " " << yGreaterThanPlayer << " " << yLessThanPlayer << endl;
+		cerr << xDPGreaterThanPlayer << " " << xDPLessThanPlayer << " " << yDPGreaterThanPlayer << " " << yDPLessThanPlayer << endl;
 
 		if(pow(directionNextMove.x,2) > pow(directionNextMove.y,2)){
 			if(x >= ARENA_WIDTH/2){
 				if(directionNextMove.x >= 0){
 					if(xLessThanPlayer >= xGreaterThanPlayer && (ARENA_WIDTH - x) >= wallRangeThreshold){
-						isFollow = true;
+						//Check Data Point density
+						if(xDPGreaterThanPlayer >= xDPLessThanPlayer) {
+							isFollow = false;
+						}
+						else {
+							isFollow = true;
+						}
 					}else{
-						isFollow = false;
+						if(xDPLessThanPlayer >= xDPGreaterThanPlayer) {
+							isFollow = true;
+						}
+						else {
+							isFollow = false;	
+						}
 					}
 				}else{
 					if(xLessThanPlayer >= xGreaterThanPlayer && (ARENA_WIDTH - x) >= wallRangeThreshold){
-						isFollow = false;
+						//Check Data Point density
+						if(xDPGreaterThanPlayer >= xDPLessThanPlayer) {
+							isFollow = true;
+						}
+						else {
+							isFollow = false;
+						}
 					}else{
-						isFollow = true;
+						if(xDPLessThanPlayer >= xDPGreaterThanPlayer) {
+							isFollow = false;
+						}
+						else {
+							isFollow = true;
+						}
 					}
 				}
 			}else{
 				if(directionNextMove.x >= 0){
-					if(xGreaterThanPlayer <= xLessThanPlayer && (x) >= wallRangeThreshold){
-						isFollow = false;
+					if(xGreaterThanPlayer >= xLessThanPlayer && (x) >= wallRangeThreshold){
+						if(xDPLessThanPlayer >= xDPGreaterThanPlayer) {
+							isFollow = true;	
+						}
+						else {
+							isFollow = false;
+						}
 					}else{
-						isFollow = true;
+						if(xDPGreaterThanPlayer >= xDPLessThanPlayer) {
+							isFollow = false;
+						}
+						else {
+							isFollow = true;	
+						}
 					}
 				}else{
-					if(xGreaterThanPlayer <= xLessThanPlayer && (x) >= wallRangeThreshold){
-						isFollow = true;
+					if(xGreaterThanPlayer >= xLessThanPlayer && (x) >= wallRangeThreshold){
+						if(xDPLessThanPlayer >= xDPGreaterThanPlayer) {
+							isFollow = false;
+						}
+						else {
+							isFollow = true;	
+						}
 					}else{
-						isFollow = false;
+						if(xDPGreaterThanPlayer >= xDPLessThanPlayer) {
+							isFollow = true;
+						}
+						else {
+							isFollow = false;
+						}
 					}
 				}
 			}
@@ -323,34 +383,74 @@ public:
 					cerr << "A1" << endl;
 					if(yLessThanPlayer >= yGreaterThanPlayer && (ARENA_HEIGHT - y) >= wallRangeThreshold){
 						cerr << "A1-1" << endl;
-						isFollow = true;
+						if(yDPGreaterThanPlayer >= yDPLessThanPlayer) {
+							isFollow = false;
+						}
+						else {
+							isFollow = true;
+						}
 					}else{
 						cerr << "A1-2" << endl;
-						isFollow = false;
+						if(yDPLessThanPlayer >= yDPGreaterThanPlayer) {
+							isFollow = true;
+						}
+						else {
+							isFollow = false;
+						}
 					}
 				}else{
 					cerr << "A2" << endl;
 					if(yLessThanPlayer >= yGreaterThanPlayer && (ARENA_HEIGHT - y) >= wallRangeThreshold){
 						cerr << "A2-1" << endl;
-						isFollow = false;
+						if(yDPGreaterThanPlayer >= yDPLessThanPlayer) {
+							isFollow = true;
+						}
+						else {
+							isFollow = false;
+						}
 					}else{
 						cerr << "A2-2" << endl;
-						isFollow = true;
+						if(yDPLessThanPlayer >= yDPGreaterThanPlayer) {
+							isFollow = false;
+						}
+						else {
+							isFollow = true;
+						}
 					}
 				}
 			}else{
 				cerr << "B" << endl;
 				if(directionNextMove.y >= 0){
 					if(yGreaterThanPlayer >= yLessThanPlayer && (y) >= wallRangeThreshold){
-						isFollow = false;
+						if(yDPLessThanPlayer >= yDPGreaterThanPlayer) {
+							isFollow = true;
+						}
+						else {
+							isFollow = false;
+						}
 					}else{
-						isFollow = true;
+						if(yDPGreaterThanPlayer >= yDPLessThanPlayer) {
+							isFollow = false;
+						}
+						else {
+							isFollow = true;
+						}
 					}
 				}else{
 					if(yGreaterThanPlayer >= yLessThanPlayer && (y) >= wallRangeThreshold){
-						isFollow = true;
+						if(yDPLessThanPlayer >= yDPGreaterThanPlayer) {
+							isFollow = false;
+						}
+						else {
+							isFollow = true;
+						}
 					}else{
-						isFollow = false;
+						if(yDPGreaterThanPlayer >= yDPLessThanPlayer) {
+							isFollow = true;
+						}
+						else {
+							isFollow = false;
+						}
 					}
 				}
 			}
@@ -412,7 +512,7 @@ public:
 
 				Vector2 nextBestDirection;
 
-				bool isEvadedClockWise = true;
+				isEvadedClockWise = true;
 				if(isEvadedClockWise){
 					nextBestDirection.x= (it->directionToDP.y);
 					nextBestDirection.y= -(it->directionToDP.x);
